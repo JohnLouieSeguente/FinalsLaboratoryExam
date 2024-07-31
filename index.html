@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css"> <!-- Main external CSS -->
+    <link rel="stylesheet" href="calendar-style.css"> <!-- Calendar-specific CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" /> <!-- Leaflet CSS -->
+    <title>Finals Lab Exam</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Sunrise and Sunset Times</h1>
+        <p class="muted">Finals Laboratory Exam <a href="#" target="_blank">BSIT BA-3302</a>.</p>
+
+        <!-- Form for inputting city -->
+        <form id="city-form">
+            <div>
+                <label for="city">City:</label>
+                <input type="text" id="city" required>
+            </div>
+            <button type="submit">Get Sunrise and Sunset Times</button>
+        </form>
+
+        <!-- Container for current date -->
+        <div class="current-date">
+            <h2>Today is <span id="current-day"></span></h2>
+        </div>
+
+        <div class="time-row">
+            <div class="block">
+                <div class="label">Sunrise Today</div>
+                <div class="data"><strong><span id="sunrise"></span></strong></div>
+            </div>
+            <div class="block">
+                <div class="label">Sunset Today</div>
+                <div class="data"><strong><span id="sunset"></span></strong></div>
+            </div>
+        </div>
+
+        <!-- Map container -->
+        <div id="map"></div>
+
+        <div class="footer">
+            <a href="#" target="_blank">John Louie Seguente</a>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script> <!-- Leaflet JavaScript -->
+    <script>
+        const apiKey = 'd19b6c899f15e715798e83d9d4f28bf1'; // Replace with your own OpenWeatherMap API key
+
+        let latitude, longitude;
+
+        document.getElementById('city-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form submission
+
+            // Get city name from the form
+            const city = document.getElementById('city').value.trim();
+
+            if (!city) {
+                alert('Please enter a city name.');
+                return;
+            }
+
+            // Fetch latitude and longitude from OpenWeatherMap
+            const geocodeUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}`;
+
+            fetch(geocodeUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.coord) {
+                        latitude = data.coord.lat;
+                        longitude = data.coord.lon;
+                        const sunriseSunsetUrl = `https://api.sunrisesunset.io/json?lat=${latitude}&lng=${longitude}`;
+
+                        // Fetch today's sunrise and sunset times
+                        return fetch(sunriseSunsetUrl)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok ' + response.statusText);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                if (data.results) {
+                                    document.querySelector('#sunrise').innerHTML = data.results.sunrise;
+                                    document.querySelector('#sunset').innerHTML = data.results.sunset;
+
+                                    // Set current day
+                                    const currentDate = new Date();
+                                    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                                    document.getElementById('current-day').textContent = currentDate.toLocaleDateString('en-US', options);
+
+                                    // Initialize the map
+                                    initMap(latitude, longitude);
+                                } else {
+                                    throw new Error('Unexpected data format');
+                                }
+                            });
+                    } else {
+                        throw new Error('Unable to get coordinates for the city.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.querySelector('#sunrise').innerHTML = 'Error fetching sunrise data';
+                    document.querySelector('#sunset').innerHTML = 'Error fetching sunset data';
+                });
+        });
+
+        // Function to initialize Leaflet map
+        function initMap(latitude, longitude) {
+            const map = L.map('map').setView([latitude, longitude], 10);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            L.marker([latitude, longitude]).addTo(map)
+                .bindPopup('City Location')
+                .openPopup();
+        }
+    </script>
+</body>
+</html>
