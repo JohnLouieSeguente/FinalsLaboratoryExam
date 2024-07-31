@@ -16,3 +16,5 @@ Step by Steps:
 
 
 
+If you input a Location on the search bar, and click on the get sunrise and sunset, it will show the time for the sunrise and sunset of that specific place, 
+Along with a map that will show where it is.
